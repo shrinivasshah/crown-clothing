@@ -1,43 +1,56 @@
-import './App.css'
-import React from 'react'
-import Homepage from './pages/homepage/Homepage'
-import ShopPage from './pages/shop/Shop'
-import {Route, Switch} from 'react-router-dom'
-import Header from './components/header/Header'
-import SignInAndSignUp from './pages/signInAndSignUp/SignInAndSignUp'
-import {auth} from './firebase/firebase'
+import "./App.css";
+import React from "react";
+import Homepage from "./pages/homepage/Homepage";
+import ShopPage from "./pages/shop/Shop";
+import { Route, Switch } from "react-router-dom";
+import Header from "./components/header/Header";
+import SignInAndSignUp from "./pages/signInAndSignUp/SignInAndSignUp";
+import { auth, createUserProfileDocument } from "./firebase/firebase";
 class App extends React.Component {
     constructor(props) {
         super();
 
         this.state = {
-            currentUser:null
-        }
+            currentUser: null,
+        };
     }
 
-    unsubscribeFromAuth = null
+    unsubscribeFromAuth = null;
 
-    componentDidMount(){
-       this.unsubscribeFromAuth = auth.onAuthStateChanged(user =>{
-            this.setState({currentUser:user})
-            console.log(user);
-        })
+    componentDidMount() {
+        this.unsubscribeFromAuth = auth.onAuthStateChanged(async (userAuth) => {
+            if (userAuth) {
+                const userRef = await createUserProfileDocument(userAuth);
+
+                userRef.onSnapshot((snapShot) => {
+                    this.setState(
+                        {
+                            currentUser: {
+                                id: snapShot.id,
+                                ...snapShot.data(),
+                            },
+                        });
+                    console.log(this.state)    
+                });
+            }
+            this.setState({ currentUser: userAuth});
+        });
     }
 
-    componentWillUnmount(){
-        this.unsubscribeFromAuth()
+    componentWillUnmount() {
+        this.unsubscribeFromAuth();
     }
-    render(){
-    return (
-        <div>
-            <Header currentUser={this.state.currentUser} />
-            <Switch>
-            <Route exact path="/" component={Homepage} />
-            <Route path='/shop' component={ShopPage} />
-            <Route path='/signin' component={SignInAndSignUp} /> 
-            </Switch>
-        </div>
-    )
+    render() {
+        return (
+            <div>
+                <Header currentUser={this.state.currentUser} />
+                <Switch>
+                    <Route exact path="/" component={Homepage} />
+                    <Route path="/shop" component={ShopPage} />
+                    <Route path="/signin" component={SignInAndSignUp} />
+                </Switch>
+            </div>
+        );
+    }
 }
-}
-export default App
+export default App;
